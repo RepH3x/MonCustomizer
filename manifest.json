@@ -1,0 +1,11 @@
+{
+  "id": "rep_mon_customizer",
+  "name": "RepMonCustomizer",
+  "version": "0.1",
+  "entry": "main.lua",
+  "api": 2,
+  "games": [ "crystal" ],
+  "category": "CONTENT",
+  "description": "Early WIP currently non-functional mon back sprite color palette customizer.",
+  "profile": "content"
+}
