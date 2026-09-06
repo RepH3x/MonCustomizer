@@ -41,16 +41,6 @@ return function(mod)
             local monSprite = Assets.image(Sprites.path(game.data, mon.name, "back"))
             local monColors = Palettes.monColors(game.data.gen2Palettes, mon.species)
             colors = monColors
-            local box = QuantityBox.new(game, {
-                max = 255,
-                start = colors[currentPalette][currentColor],
-                onDone = function(qty)
-                    if not qty then qty = 0 end
-                    if currentColor == 1 then setR(currentPalette, qty) end
-                    if currentColor == 2 then setG(currentPalette, qty) end
-                    if currentColor == 3 then setB(currentPalette, qty) end
-                end
-            })
 
             local function wrap(number, max)
                 if number < 1 then return max end
@@ -106,7 +96,7 @@ return function(mod)
                 Font.draw(mon.nickname or mon.name, 16, 16)
                 Font.draw("R   G   B", 40, 70)
                 G.setColor(255, 0, 0, 1)
-                G.rectangle("fill", (32*currentColor), 70+(10*currentPalette), 24, 8)
+                G.rectangle("fill", (32*currentColor), 70+(10*currentPalette), 23, 8)
                 G.setColor(1, 1, 1, 1)
                 Font.draw(createColorString(1), 8, 80)
                 Font.draw(createColorString(2), 8, 90)
