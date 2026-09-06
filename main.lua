@@ -3,36 +3,30 @@ return function(mod)
     local Sprites = require("src.pokemon.Sprites")
     local Assets = require("src.render.Assets")
     local GbcPalette = require("src.render.GbcPalette")
+    local Palettes = require("src.world.gen2.Palettes")
     local QuantityBox = require("src.ui.QuantityBox")
 
     local Font = mod.ui.Font
     local G = love.graphics
 
-    local currentPalette = 1
+    local currentPalette = 1 -- 1-4
     local currentColor = 1 -- 1=R, 2=G, 3=B
 
-    -- in each array, pos 1 is palette color 1 in rgb aggregrate from each array, pos 2 is palette color 2, etc
-    local r = {0, 0, 0, 0}
-    local g = {0, 0, 0, 0}
-    local b = {0, 0, 0, 0}
+    local colors = {
+        {0, 0, 0},
+        {0, 0, 0},
+        {0, 0, 0},
+        {0, 0, 0}
+    }
 
     function setR(index, newR)
-        if index == 1 then r = {newR, r[2], r[3], r[4]} end
-        if index == 2 then r = {r[1], newR, r[3], r[4]} end
-        if index == 3 then r = {r[1], r[2], newR, r[4]} end
-        if index == 4 then r = {r[1], r[2], r[3], newR} end
+        colors[index][1] = newR
     end
     function setG(index, newG)
-        if index == 1 then g = {newG, g[2], g[3], g[4]} end
-        if index == 2 then g = {g[1], newG, g[3], g[4]} end
-        if index == 3 then g = {g[1], g[2], newG, g[4]} end
-        if index == 4 then g = {g[1], g[2], g[3], newG} end
+        colors[index][2] = newG
     end
     function setB(index, newB)
-        if index == 1 then b = {newB, b[2], b[3], b[4]} end
-        if index == 2 then b = {b[1], newB, b[3], b[4]} end
-        if index == 3 then b = {b[1], b[2], newB, b[4]} end
-        if index == 4 then b = {b[1], b[2], b[3], newB} end
+        colors[index][3] = newB
     end
     function setColor(index, newR, newG, newB)
         setR(index, newR)
@@ -40,17 +34,16 @@ return function(mod)
         setB(index, newB)
     end
 
-    --setColor(1, 255, 0, 0)
-    --setColor(2, 0, 255, 0)
-    --setColor(3, 0, 0, 255)
-
     mod.content.screens:register("RepMCMainMenu", {
         new = function(game, mon)
 
             local self = { game = game, isOpaque = true }
             local monSprite = Assets.image(Sprites.path(game.data, mon.name, "back"))
+            local monColors = Palettes.monColors(game.data.gen2Palettes, mon.species)
+            colors = monColors
             local box = QuantityBox.new(game, {
                 max = 255,
+                start = colors[currentPalette][currentColor],
                 onDone = function(qty)
                     if not qty then qty = 0 end
                     if currentColor == 1 then setR(currentPalette, qty) end
@@ -65,28 +58,43 @@ return function(mod)
                 return number
             end
 
-            local function getColorChar(number)
-                if number == 1 then return "R" end
-                if number == 2 then return "G" end
-                if number == 3 then return "B" end
-                return "?"
+            local function normalizeColorLength(number)
+                if number < 10 then return "00" .. tostring(number) end
+                if number < 100 then return "0" .. tostring(number) end
+                return number
+            end
+
+            local function createColorString(index)
+                return tostring(index) .. ": "
+                .. normalizeColorLength(colors[index][1]) .. ","
+                .. normalizeColorLength(colors[index][2]) .. ","
+                .. normalizeColorLength(colors[index][3])
             end
 
             function self:update(dt)
                 if game.input:wasPressed("a") then
-                    game.stack:push(box)
+                    game.stack:push(QuantityBox.new(game, {
+                        max = 255,
+                        start = colors[currentPalette][currentColor],
+                        onDone = function(qty)
+                            if not qty then qty = 0 end
+                            if currentColor == 1 then setR(currentPalette, qty) end
+                            if currentColor == 2 then setG(currentPalette, qty) end
+                            if currentColor == 3 then setB(currentPalette, qty) end
+                        end
+                    }))
                 end
                 if game.input:wasPressed("up") then
-                    currentColor = wrap(currentColor + 1, 3)
-                end
-                if game.input:wasPressed("down") then
-                    currentColor = wrap(currentColor - 1, 3)
-                end
-                if game.input:wasPressed("left") then
                     currentPalette = wrap(currentPalette - 1, 4)
                 end
-                if game.input:wasPressed("right") then
+                if game.input:wasPressed("down") then
                     currentPalette = wrap(currentPalette + 1, 4)
+                end
+                if game.input:wasPressed("left") then
+                    currentColor = wrap(currentColor - 1, 3)
+                end
+                if game.input:wasPressed("right") then
+                    currentColor = wrap(currentColor + 1, 3)
                 end
                 if game.input:wasPressed("b") then
                     game.stack:pop()
@@ -96,20 +104,18 @@ return function(mod)
             function self:draw()
                 Font.drawBox(0, 0, 20, 18) -- full-screen GB frame
                 Font.draw(mon.nickname or mon.name, 16, 16)
-                Font.draw(tostring(currentPalette), 8, 40)
-                Font.draw(getColorChar(currentColor), 8, 50)
-                --Font.draw("{")
+                Font.draw("R   G   B", 40, 70)
+                G.setColor(255, 0, 0, 1)
+                G.rectangle("fill", (32*currentColor), 70+(10*currentPalette), 24, 8)
+                G.setColor(1, 1, 1, 1)
+                Font.draw(createColorString(1), 8, 80)
+                Font.draw(createColorString(2), 8, 90)
+                Font.draw(createColorString(3), 8, 100)
+                Font.draw(createColorString(4), 8, 110)
 
                 local function body()
                     G.draw(monSprite, 96, 16, 0, 1, 1)
                 end
-
-                local colors = {
-                    { r[1], g[1], b[1] },
-                    { r[2], g[2], b[2] },
-                    { r[3], g[3], b[3] },
-                    { r[4], g[4], b[4] }
-                }
 
                 GbcPalette.with(colors, body)
             end
